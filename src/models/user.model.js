@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 const userSchema = new Schema(
   {
     username: {
-      type: string,
+      type: String,
       required: true,
       unique: true,
       lowercase: true,
@@ -12,24 +12,24 @@ const userSchema = new Schema(
       index: true,
     },
     email: {
-      type: string,
+      type: String,
       required: true,
       unique: true,
       lowercase: true,
       trim: true,
     },
     fullName: {
-      type: string,
+      type: String,
       required: true,
       index: true,
       trim: true,
     },
     avatar: {
-      type: string,
+      type: String,
       required: true,
     },
     coverImage: {
-      type: string,
+      type: String,
     },
     watchHistory: [
       {
@@ -37,21 +37,20 @@ const userSchema = new Schema(
         ref: "Video",
       },
     ],
-    pasword: {
-      type: string,
+    password: {
+      type: String,
       required: true,
     },
     refreshToken: {
-      type: string,
+      type: String,
     },
   },
   { timestamps: true }
 );
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    return next();
-  }
-  this.pasword = await bcrypt.hash(this.password, 10);
+  if (!this.isModified("password")) return next();
+
+  this.password = await bcrypt.hash(this.password, 10);
   next();
 });
 
@@ -79,4 +78,5 @@ userSchema.methods.generateRefreshToken = function () {
     { expiresIn: process.env.TOKEN_REFRESH_EXPIRY_TIME }
   );
 };
-export default User = mongoose.model("User", userSchema);
+const User = mongoose.model("User", userSchema);
+export default User;

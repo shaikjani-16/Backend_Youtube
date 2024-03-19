@@ -8,11 +8,12 @@ const registerUser = asyncHandler(async (req, res) => {
   ) {
     throw new Error("Please fill in all fields.");
   }
-  const user = User.findOne({
+  const existedUser = await User.findOne({
     $or: [{ username }, { email }],
   });
-  if (user) {
-    throw new Error("Username or email already exists.");
+
+  if (existedUser) {
+    throw new Error(409, "User with email or username already exists");
   }
   console.log(req.files?.avatar[0]?.path);
   const avatarLocation = req.files?.avatar[0]?.path;
@@ -28,7 +29,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const newUser = await User.create({
     fullName,
     avatar: avatar.url,
-    coverImage: coverImage.url || "",
+    coverImage: coverImage?.url || "",
     email: email,
     username: username.toLowerCase(),
     password: password,
