@@ -12,7 +12,7 @@ app.use((err, req, res, next) => {
 connectDb()
   .then(() => {
     app.listen(process.env.PORT || 3000, () => {
-      console.log("Server is running on port 3000");
+      console.log(`Server is listening on ${process.env.PORT}`);
     });
   })
   .catch((e) => console.log("Mongo URL" + e));
