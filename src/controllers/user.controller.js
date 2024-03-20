@@ -1,6 +1,8 @@
 import { asyncHandler } from "../utils/handler.js";
 import User from "../models/user.model.js";
-import uploadFileCloudinary from "../utils/cloudinary.js";
+import uploadFileCloudinary, {
+  deleteOnCloudinary,
+} from "../utils/cloudinary.js";
 import jwt from "jsonwebtoken";
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -20,10 +22,10 @@ const generateAccessAndRefreshTokens = async (userId) => {
   }
 };
 const registerUser = asyncHandler(async (req, res) => {
+  console.log(req.body);
   const { fullName, email, username, password } = req.body;
-  if (
-    [fullName, email, username, password].some((field) => field?.trim() === "")
-  ) {
+
+  if (!fullName || !email || !username || !password) {
     throw new Error("Please fill in all fields.");
   }
   const existedUser = await User.findOne({
@@ -47,7 +49,9 @@ const registerUser = asyncHandler(async (req, res) => {
   const newUser = await User.create({
     fullName,
     avatar: avatar.url,
+    avatarPublicId: avatar.public_id,
     coverImage: coverImage?.url || "",
+    coverImagePublicId: coverImage?.public_id,
     email: email,
     username: username.toLowerCase(),
     password: password,
@@ -158,6 +162,101 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       refreshToken: refreshToken,
     });
 });
+const changeCurrentPassword = asyncHandler(async (req, res) => {
+  const { oldPassword, newPassword, confirmPassword } = req.body;
+  if (newPassword !== confirmPassword) {
+    throw new Error("Invalid confirm password");
+  }
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new Error("No user found");
+  }
+  const isMatch = await user.isPasswordCorrect(oldPassword);
+  if (!isMatch) {
+    throw new Error("Old password is incorrect");
+  }
+  user.password = newPassword;
+  await user.save({ validateBeforeSave: false });
+  res.status(200).json({
+    success: true,
+    message: "Password changed successfully",
+  });
+});
+const getCurrentUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id).select(
+    "-password -refreshToken"
+  );
+  res.status(200).json({
+    success: true,
+    user: user,
+  });
+});
+const changeAccountDetails = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new Error("No user found");
+  }
+  user.fullName = req.body.fullName || user.fullName;
+  user.username = req.body.username || user.username;
+  user.email = req.body.email || user.email;
+  await user.save({ validateBeforeSave: false });
+  res.status(200).json({
+    success: true,
+    message: "Account details updated successfully",
+    user,
+  });
+});
+const changeAvatar = asyncHandler(async (req, res) => {
+  // const user = await User.findById(req.user._id);
+  // if (!user) {
+  //   throw new Error("No user found");
+  // }
+  console.log(req.file?.path);
+  const avatarLocation = req.file?.path;
+  if (!avatarLocation) {
+    throw new Error("Please upload an avatar.");
+  }
 
+  const dbUser = await User.findById(req.user._id);
+  if (!dbUser) {
+    throw new Error("No user found");
+  }
+  const previousAvatar = dbUser.avatarPublicId;
+  if (previousAvatar) {
+    await deleteOnCloudinary(previousAvatar);
+  }
+  const avatar = await uploadFileCloudinary(avatarLocation);
+
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        avatar: avatar.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  if (!avatar.url) {
+    throw new Error(400, "Error while uploading on avatar file in cloudinary");
+  }
+
+  user.avatarPublicId = avatar.public_id;
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({
+    success: true,
+    message: "Avatar updated successfully",
+    user,
+  });
+});
 export default registerUser;
-export { loginUser, logoutUser, refreshAccessToken };
+export {
+  loginUser,
+  logoutUser,
+  refreshAccessToken,
+  changeCurrentPassword,
+  getCurrentUser,
+  changeAccountDetails,
+  changeAvatar,
+};
