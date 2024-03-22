@@ -293,7 +293,7 @@ const changeCover = asyncHandler(async (req, res) => {
   });
 });
 const getProfileData = asyncHandler(async (req, res) => {
-  const { username } = req.body.params;
+  const { username } = req.params;
   if (!username.trim()) throw new Error("No username provided");
   const channel = await User.aggregate([
     {
