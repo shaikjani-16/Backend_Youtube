@@ -1,5 +1,6 @@
 import { asyncHandler } from "../utils/handler.js";
 import User from "../models/user.model.js";
+import mongoose from "mongoose";
 import uploadFileCloudinary, {
   deleteOnCloudinary,
 } from "../utils/cloudinary.js";
@@ -356,7 +357,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
   const user = await User.aggregate([
     {
       $match: {
-        _id: new mongoose.Types.ObjectId(req.user._id),
+        _id: req.user._id.toHexString(),
       },
     },
     {
@@ -394,7 +395,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  return res.status(200).json(user[0].watchHistory);
+  return res.status(200).json(user[0]?.watchHistory);
 });
 export default registerUser;
 export {

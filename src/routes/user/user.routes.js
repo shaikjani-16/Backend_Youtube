@@ -40,5 +40,5 @@ router
   .route("/change-cover")
   .patch(verifyJWT, upload.single("cover"), changeCover);
 router.route("/channel/:username").get(verifyJWT, getProfileData);
-router.route("/history").get(getWatchHistory);
+router.route("/history").get(verifyJWT, getWatchHistory);
 export default router;
