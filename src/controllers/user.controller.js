@@ -250,6 +250,48 @@ const changeAvatar = asyncHandler(async (req, res) => {
     user,
   });
 });
+const changeCover = asyncHandler(async (req, res) => {
+  // const user = await User.findById(req.user._id);
+  // if (!user) {
+  //   throw new Error("No user found");
+  // }
+
+  const coverLocation = req.file?.path;
+  if (!coverLocation) {
+    throw new Error("Please upload an avatar.");
+  }
+
+  const dbUser = await User.findById(req.user._id);
+  if (!dbUser) {
+    throw new Error("No user found");
+  }
+  const previousCover = dbUser.coverImagePublicId;
+  if (previousCover) {
+    await deleteOnCloudinary(previousCover);
+  }
+  const cover = await uploadFileCloudinary(coverLocation);
+  if (!cover.url) {
+    throw new Error(400, "Error while uploading on avatar file in cloudinary");
+  }
+  const user = await User.findByIdAndUpdate(
+    req.user?._id,
+    {
+      $set: {
+        coverImage: cover.url,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  user.coverImagePublicId = cover.public_id;
+  await user.save({ validateBeforeSave: false });
+
+  res.status(200).json({
+    success: true,
+    message: "Cover updated successfully",
+    user,
+  });
+});
 export default registerUser;
 export {
   loginUser,
@@ -259,4 +301,5 @@ export {
   getCurrentUser,
   changeAccountDetails,
   changeAvatar,
+  changeCover,
 };

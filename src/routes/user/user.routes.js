@@ -7,6 +7,7 @@ import registerUser, {
   getCurrentUser,
   changeAccountDetails,
   changeAvatar,
+  changeCover,
 } from "../../controllers/user.controller.js";
 import { upload } from "../../middlewares/multer.js";
 import { verifyJWT } from "../../middlewares/auth.middleware.js";
@@ -33,4 +34,7 @@ router.route("/change-details").post(verifyJWT, changeAccountDetails);
 router
   .route("/change-avatar")
   .patch(verifyJWT, upload.single("avatar"), changeAvatar);
+router
+  .route("/change-cover")
+  .patch(verifyJWT, upload.single("cover"), changeCover);
 export default router;
